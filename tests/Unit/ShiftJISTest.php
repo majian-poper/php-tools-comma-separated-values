@@ -7,7 +7,7 @@ use PHPTools\CommaSeparatedValues\CommaSeparatedValues;
 beforeEach(function () {
     $this->file = __DIR__.'/../fixtures/shiftjis.csv';
 
-    $this->csv = new CommaSeparatedValues($this->file);
+    $this->csv = (new CommaSeparatedValues($this->file))->setOptions([CommaSeparatedValues::OPTION_ENCODING_LIST => ['SJIS-win']]);
 });
 
 describe('CommaSeparatedValues for Shift_JIS csv', function () {

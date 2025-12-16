@@ -6,11 +6,11 @@ use PHPTools\CommaSeparatedValues\Contracts\CommaSeparatedValuesInterface;
 
 class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValuesInterface
 {
+    protected array $options = [];
+
     protected bool $withBom;
 
     protected array $encoding = [];
-
-    protected int $detectEncodingRows = 10;
 
     protected array $headers;
 
@@ -24,6 +24,8 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         // the $escape parameter must be provided, as its default value will change,
         // either explicitly or via SplFileObject::setCsvControl()
         $this->setCsvControl(',', '"', '\\');
+
+        $this->setOptions();
     }
 
     public function __destruct()
@@ -31,6 +33,32 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         if (isset($this->converted)) {
             @\unlink($this->converted->getRealPath());
         }
+    }
+
+    public function setOptions(array $options = []): self
+    {
+        $options = \array_merge($this->options, $options);
+
+        $this->options[static::OPTION_ENCODING_LIST] = \array_merge(
+            [static::DEFAULT_ENCODING],
+            (array) ($options[static::OPTION_ENCODING_LIST] ?? \mb_list_encodings())
+        );
+        // Ensure at least 1 row is checked
+        $this->options[static::OPTION_DETECT_ENCODING_ROWS] = \max(
+            \intval($options[static::OPTION_DETECT_ENCODING_ROWS] ?? 10),
+            1
+        );
+        $this->options[static::OPTION_WITH_HEADER] = \boolval($options[static::OPTION_WITH_HEADER] ?? true);
+        $this->options[static::OPTION_TRIM] = \boolval($options[static::OPTION_TRIM] ?? true);
+        $this->options[static::OPTION_EMPTY_TO_NULL] = \boolval($options[static::OPTION_EMPTY_TO_NULL] ?? true);
+        $this->options[static::OPTION_SKIP_EMPTY_ROW] = \boolval($options[static::OPTION_SKIP_EMPTY_ROW] ?? true);
+
+        return $this;
+    }
+
+    public function getOptions(): array
+    {
+        return $this->options;
     }
 
     public function withBom(): bool
@@ -50,22 +78,26 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
 
     public function getEncoding(): string
     {
-        if (isset($this->encoding[$this->detectEncodingRows])) {
-            return $this->encoding[$this->detectEncodingRows];
+        // Ensure at least 1 row is checked
+        $detectEncodingRows = $this->options[static::OPTION_DETECT_ENCODING_ROWS] ?? 10;
+
+        if (isset($this->encoding[$detectEncodingRows])) {
+            return $this->encoding[$detectEncodingRows];
         } else {
             $this->encoding = [];
         }
 
         $this->rewind();
 
-        $encodingList = \array_merge([static::DEFAULT_ENCODING, 'SJIS-win'], \mb_list_encodings());
+        $encodingList = $this->options[static::OPTION_ENCODING_LIST];
+
         $detectedRows = 0;
         $encodings = [];
 
         $string = '';
 
         while (! $this->eof()) {
-            if (++$detectedRows > $this->detectEncodingRows) {
+            if (++$detectedRows > $detectEncodingRows) {
                 break;
             }
 
@@ -87,12 +119,12 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         }
 
         if ($count > (isset($encodings[static::DEFAULT_ENCODING]) ? 2 : 1)) {
-            throw new \RuntimeException('Multiple encodings detected: '.\implode(', ', $encodings));
+            throw new \RuntimeException('Multiple encodings detected: ' . \implode(', ', $encodings));
         }
 
         unset($encodings[static::DEFAULT_ENCODING]);
 
-        return $this->encoding[$this->detectEncodingRows] = \current($encodings) ?: static::DEFAULT_ENCODING;
+        return $this->encoding[$detectEncodingRows] = \current($encodings) ?: static::DEFAULT_ENCODING;
     }
 
     public function getHeaders(): array
@@ -101,23 +133,37 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
             return $this->headers;
         }
 
-        foreach ($this->readRow([static::OPTION_WITH_HEADER => false, static::OPTION_SKIP_EMPTY_ROW => false]) as $row) {
+        $backupOptions = $this->getOptions();
+
+        $this->setOptions(
+            [
+                static::OPTION_WITH_HEADER => false,
+                static::OPTION_EMPTY_TO_NULL => false,
+                static::OPTION_SKIP_EMPTY_ROW => false,
+            ]
+        );
+
+        foreach ($this->readRow() as $row) {
             $this->headers = $this->makeHeadersUnique($row);
 
             break;
         }
+
+        $this->setOptions($backupOptions);
 
         return $this->headers ??= [];
     }
 
     public function readRow(array $options = []): \Generator
     {
+        $this->setOptions($options);
+
         $converted = $this->encodingConverted();
 
-        $withHeader = $options[static::OPTION_WITH_HEADER] ?? true;
-        $trim = $options[static::OPTION_TRIM] ?? true;
-        $emptyToNull = $options[static::OPTION_EMPTY_TO_NULL] ?? true;
-        $skipEmptyRow = $options[static::OPTION_SKIP_EMPTY_ROW] ?? true;
+        $withHeader = $this->options[static::OPTION_WITH_HEADER];
+        $trim = $this->options[static::OPTION_TRIM];
+        $emptyToNull = $this->options[static::OPTION_EMPTY_TO_NULL];
+        $skipEmptyRow = $this->options[static::OPTION_SKIP_EMPTY_ROW];
         $itemConvertor = $this->itemConvertor($trim, $emptyToNull);
 
         $headers = [];
@@ -130,7 +176,7 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
 
             $row = \array_map($itemConvertor, $converted->fgetcsv());
 
-            if (empty(\array_filter($row)) && $skipEmptyRow) {
+            if ($skipEmptyRow && empty(\array_filter($row))) {
                 continue;
             }
 
@@ -174,15 +220,6 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         if (! empty($chunk)) {
             yield $chunkIndex => $chunk;
         }
-    }
-
-    public function setDetectEncodingRows(int $rows): self
-    {
-        if ($rows > 0) {
-            $this->detectEncodingRows = $rows;
-        }
-
-        return $this;
     }
 
     protected function removeBom(string $string): string

@@ -6,6 +6,10 @@ interface CommaSeparatedValuesInterface
 {
     public const DEFAULT_ENCODING = 'UTF-8';
 
+    public const OPTION_ENCODING_LIST = 'encoding_list';
+
+    public const OPTION_DETECT_ENCODING_ROWS = 'detect_encoding_rows';
+
     public const OPTION_WITH_HEADER = 'with_header';
 
     public const OPTION_TRIM = 'trim';
@@ -14,7 +18,7 @@ interface CommaSeparatedValuesInterface
 
     public const OPTION_SKIP_EMPTY_ROW = 'skip_empty_row';
 
-    public function getBasename(): string;
+    public function getBasename(string $suffix = ''): string;
 
     public function withBom(): bool;
 
