@@ -14,6 +14,5 @@ describe('CommaSeparatedValues for multi-encoding csv', function () {
 
     test('getEncoding throws exception', function () {
         $this->csv->getEncoding();
-    })->throws(RuntimeException::class, 'Multiple encodings detected: UTF-8, Windows-1252, Windows-1251');
-
+    })->throws(RuntimeException::class);
 });

@@ -18,6 +18,10 @@ interface CommaSeparatedValuesInterface
 
     public const OPTION_SKIP_EMPTY_ROW = 'skip_empty_row';
 
+    public const OPTION_OFFSET = 'offset';
+
+    public const OPTION_LIMIT = 'limit';
+
     public function getBasename(string $suffix = ''): string;
 
     public function withBom(): bool;
