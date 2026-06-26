@@ -110,7 +110,7 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         $cacheKeyJson = \json_encode(
             [
                 static::OPTION_DETECT_ENCODING_ROWS => $detectEncodingRows,
-                static::OPTION_ENCODING_LIST => $encodingList
+                static::OPTION_ENCODING_LIST => $encodingList,
             ]
         );
 
@@ -155,7 +155,7 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         $count = \count($detectedEncodings);
 
         if ($count === 0) {
-            throw new \RuntimeException('Unable to detect file encoding for: ' . $this->getRealPath());
+            throw new \RuntimeException('Unable to detect file encoding for: '.$this->getRealPath());
         }
 
         if ($count > (\in_array(static::DEFAULT_ENCODING, $detectedEncodings, true) ? 2 : 1)) {
@@ -215,8 +215,8 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
         $converted = $this->encodingConverted();
 
         $readRowBatch = $this->readRowBatch++;
-        $methodTag = __METHOD__ . '#' . $readRowBatch;
-        $generatorTag = __METHOD__ . '#' . $readRowBatch . ':generator';
+        $methodTag = __METHOD__.'#'.$readRowBatch;
+        $generatorTag = __METHOD__.'#'.$readRowBatch.':generator';
 
         $converted->recordPosition($methodTag);
         $converted->rewind();
@@ -276,7 +276,7 @@ class CommaSeparatedValues extends \SplFileObject implements CommaSeparatedValue
     public function readRows(int $size, array $options = []): \Generator
     {
         if ($size <= 0) {
-            throw new \InvalidArgumentException('Size must be a positive integer. Given: ' . $size);
+            throw new \InvalidArgumentException('Size must be a positive integer. Given: '.$size);
         }
 
         $chunkIndex = 0;

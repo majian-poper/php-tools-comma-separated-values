@@ -5,7 +5,7 @@ declare(strict_types=1);
 use PHPTools\CommaSeparatedValues\CommaSeparatedValues;
 
 beforeEach(function () {
-    $this->file = __DIR__ . '/../fixtures/offset-limit.csv';
+    $this->file = __DIR__.'/../fixtures/offset-limit.csv';
 
     $this->csv = new CommaSeparatedValues($this->file);
 });

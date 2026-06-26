@@ -164,7 +164,7 @@ describe('CommaSeparatedValues position management', function () {
         test('multiple sequential readRow() calls each return all rows', function () {
             $csv = new CommaSeparatedValues(__DIR__.'/../fixtures/utf8.csv');
 
-            $first  = iterator_to_array($csv->readRow());
+            $first = iterator_to_array($csv->readRow());
             $second = iterator_to_array($csv->readRow());
 
             expect($first)->toHaveCount(5);
